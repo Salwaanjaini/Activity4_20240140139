@@ -119,4 +119,14 @@ namespace CRUDMahasiswaADO
             txtNIM.Focus();
         }
 
+        private bool ValidasiInput()
+        {
+            if (txtNIM.Text.Trim() == "") { MessageBox.Show("NIM harus diisi", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNIM.Focus(); return false; }
+            if (txtNama.Text.Trim() == "") { MessageBox.Show("Nama harus diisi", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtNama.Focus(); return false; }
+            if (cmbJK.Text.Trim() == "") { MessageBox.Show("Jenis Kelamin harus dipilih", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); cmbJK.Focus(); return false; }
+            if (txtKodeProdi.Text.Trim() == "") { MessageBox.Show("Kode Prodi harus diisi", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning); txtKodeProdi.Focus(); return false; }
+            return true;
+        }
+
        
+}
