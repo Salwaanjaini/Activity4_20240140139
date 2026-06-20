@@ -150,5 +150,23 @@ namespace CRUDMahasiswaADO
 
         #region --- Event Handler CRUD & DataGridView ---
 
-       
+        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
+
+            txtNIM.Text = row.Cells["NIM"].Value?.ToString();
+            txtNama.Text = row.Cells["Nama"].Value?.ToString();
+            cmbJK.Text = row.Cells["JenisKelamin"].Value?.ToString();
+
+            if (row.Cells["TanggalLahir"].Value != null && row.Cells["TanggalLahir"].Value != DBNull.Value)
+            {
+                dtpTanggalLahir.Value = Convert.ToDateTime(row.Cells["TanggalLahir"].Value);
+            }
+
+            txtAlamat.Text = row.Cells["Alamat"].Value?.ToString();
+            txtKodeProdi.Text = row.Cells["KodeProdi"].Value?.ToString();
+        }
+
+      
 }
