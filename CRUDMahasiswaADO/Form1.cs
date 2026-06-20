@@ -17,5 +17,27 @@ namespace CRUDMahasiswaADO
             InitializeComponent();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            // Inisialisasi komponen pilihan Jenis Kelamin
+            cmbJK.Items.Clear();
+            cmbJK.Items.Add("L");
+            cmbJK.Items.Add("P");
+
+            // Konfigurasi Grid Tampilan Data agar rapi dan aman
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridView1.MultiSelect = false;
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+
+            // Menghubungkan event handler grid data
+            dataGridView1.CellClick += dataGridView1_CellClick;
+            dataGridView1.DataError += dataGridView1_DataError;
+
+            // Memuat data pertama kali saat form dibuka
+            LoadData();
+        }
+
         
-}
+     }
