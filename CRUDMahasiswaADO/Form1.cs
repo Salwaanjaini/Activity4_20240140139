@@ -58,7 +58,54 @@ namespace CRUDMahasiswaADO
             }
         }
 
-        
-        #endregion
-    }
+        private void LoadData()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("sp_GetMahasiswa", conn))
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    dtMahasiswa = new DataTable();
+                    da.Fill(dtMahasiswa);
+
+                    dataGridView1.DataSource = null;
+                    dataGridView1.DataSource = dtMahasiswa;
+                }
+                HitungTotal();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal load data: " + ex.Message, "Error Load", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SimpanLog("LOAD DATA GAGAL: " + ex.Message);
+            }
+        }
+
+        private void HitungTotal()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("sp_CountMahasiswa", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    ParameterDirection direction = ParameterDirection.Output;
+                    SqlParameter outputParam = new SqlParameter("@Total", SqlDbType.Int) { Direction = direction };
+
+                    cmd.Parameters.Add(outputParam);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+
+                    lblCountMhs.Text = "Total Mahasiswa: " + outputParam.Value.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menghitung total: " + ex.Message, "Error Count", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SimpanLog("COUNT TOTAL GAGAL: " + ex.Message);
+            }
+        }
+
+       
 }
