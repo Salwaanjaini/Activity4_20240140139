@@ -128,5 +128,27 @@ namespace CRUDMahasiswaADO
             return true;
         }
 
+        private void SimpanLog(string pesan)
+        {
+            try
+            {
+                using (SqlConnection connLog = new SqlConnection(connectionString))
+                {
+                    string query = "INSERT INTO LogError (waktu, pesan_error) VALUES (GETDATE(), @pesan)";
+                    using (SqlCommand cmdLog = new SqlCommand(query, connLog))
+                    {
+                        cmdLog.Parameters.AddWithValue("@pesan", pesan);
+                        connLog.Open();
+                        cmdLog.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception) { /* Abaikan jika pencatatan log error juga gagal */ }
+        }
+
+        #endregion
+
+        #region --- Event Handler CRUD & DataGridView ---
+
        
 }
