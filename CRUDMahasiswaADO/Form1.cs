@@ -216,4 +216,212 @@ namespace CRUDMahasiswaADO
             }
         }
 
-       
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!ValidasiInput()) return;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("sp_UpdateMahasiswa", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@NIM", txtNIM.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Nama", txtNama.Text.Trim());
+                    cmd.Parameters.AddWithValue("@JenisKelamin", cmbJK.Text.Trim());
+                    cmd.Parameters.AddWithValue("@TanggalLahir", dtpTanggalLahir.Value.Date);
+                    cmd.Parameters.AddWithValue("@Alamat", txtAlamat.Text.Trim());
+                    cmd.Parameters.AddWithValue("@KodeProdi", txtKodeProdi.Text.Trim());
+
+                    conn.Open();
+                    int result = cmd.ExecuteNonQuery();
+
+                    if (result > 0) MessageBox.Show("Data berhasil diupdate", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else MessageBox.Show("Data tidak ditemukan", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                ClearForm();
+                LoadData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Terjadi kesalahan: " + ex.Message, "Error Update", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SimpanLog("UPDATE GAGAL: " + ex.Message);
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (txtNIM.Text.Trim() == "")
+                {
+                    MessageBox.Show("Pilih data yang akan dihapus", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (MessageBox.Show("Yakin ingin menghapus data?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No) return;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                using (SqlCommand cmd = new SqlCommand("sp_DeleteMahasiswa", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@NIM", SqlDbType.Char, 11).Value = txtNIM.Text.Trim();
+
+                    conn.Open();
+                    if (cmd.ExecuteNonQuery() > 0) MessageBox.Show("Data berhasil dihapus", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else MessageBox.Show("Data gagal dihapus atau tidak ditemukan", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                ClearForm();
+                LoadData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Terjadi kesalahan: " + ex.Message, "Error Delete", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SimpanLog("DELETE GAGAL: " + ex.Message);
+            }
+        }
+
+        private void btnResetData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"
+                    IF OBJECT_ID('dbo.Mahasiswa_Backup') IS NOT NULL
+                    BEGIN
+                        DELETE FROM dbo.Mahasiswa;
+                        INSERT INTO dbo.Mahasiswa SELECT * FROM dbo.Mahasiswa_Backup;
+                    END";
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+                MessageBox.Show("Data berhasil direset", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ClearForm();
+                LoadData();
+            }
+            catch (Exception ex) { MessageBox.Show("Reset gagal: " + ex.Message, "Error Reset", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        }
+
+        private void btnTestInjection_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = "UPDATE Mahasiswa SET Nama='" + txtNama.Text + "' WHERE NIM='" + txtNIM.Text + "'; ";
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Update berhasil");
+                }
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+
+        private void btnRekapData_Click(object sender, EventArgs e)
+        {
+            FormRekap frmRekap = new FormRekap();
+            frmRekap.Show();
+            this.Hide();
+        }
+
+        #endregion
+
+        #region --- Event Handler Tambahan (Excel, Refresh, Upload) ---
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            ClearForm();
+            LoadData();
+        }
+
+        private void btnImpExcel_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog() { Filter = "Excel Workbook|*.xls;*.xlsx", Title = "Pilih File Excel" })
+            {
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        // Koneksi OLEDB standar untuk membaca Excel
+                        string connString = $@"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={ofd.FileName};Extended Properties=""Excel 12.0 Xml;HDR=YES;""";
+                        using (OleDbConnection excelConn = new OleDbConnection(connString))
+                        {
+                            excelConn.Open();
+                            // Mengambil nama Sheet pertama secara otomatis
+                            DataTable dtSchema = excelConn.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+                            string sheetName = dtSchema.Rows[0]["TABLE_NAME"].ToString();
+
+                            using (OleDbDataAdapter da = new OleDbDataAdapter($"SELECT * FROM [{sheetName}]", excelConn))
+                            {
+                                DataTable dtExcel = new DataTable();
+                                da.Fill(dtExcel);
+                                dataGridView1.DataSource = dtExcel; // Menampilkan data Excel ke Grid
+                                MessageBox.Show("Data Excel berhasil dimuat! Silakan cek di grid, lalu klik 'Import to Database' untuk menyimpan permanen.", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Gagal membaca file Excel. Pastikan file tidak sedang terbuka.\nError: " + ex.Message, "Error Import", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void btnImpDb_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.Rows.Count == 0)
+            {
+                MessageBox.Show("Tidak ada data di Grid untuk diimport!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                int countSukses = 0;
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    foreach (DataGridViewRow row in dataGridView1.Rows)
+                    {
+                        if (row.IsNewRow) continue; // Abaikan baris kosong terbawah
+
+                        using (SqlCommand cmd = new SqlCommand("sp_InsertMahasiswa", conn))
+                        {
+                            cmd.CommandType = CommandType.StoredProcedure;
+
+                            // Menarik value dari DataGridView. Pastikan nama kolom di Excel sesuai dengan nama parameter ini
+                            cmd.Parameters.AddWithValue("@NIM", row.Cells["NIM"].Value?.ToString() ?? "");
+                            cmd.Parameters.AddWithValue("@Nama", row.Cells["Nama"].Value?.ToString() ?? "");
+                            cmd.Parameters.AddWithValue("@JenisKelamin", row.Cells["JenisKelamin"].Value?.ToString() ?? "");
+                            cmd.Parameters.AddWithValue("@TanggalLahir", Convert.ToDateTime(row.Cells["TanggalLahir"].Value ?? DateTime.Now));
+                            cmd.Parameters.AddWithValue("@Alamat", row.Cells["Alamat"].Value?.ToString() ?? "");
+                            cmd.Parameters.AddWithValue("@KodeProdi", row.Cells["KodeProdi"].Value?.ToString() ?? "");
+                            cmd.Parameters.AddWithValue("@TanggalDaftar", DateTime.Now);
+
+                            cmd.ExecuteNonQuery();
+                            countSukses++;
+                        }
+                    }
+                }
+                MessageBox.Show($"{countSukses} Data berhasil disimpan ke Database SQL Server!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadData(); // Kembalikan grid ke data asli database
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Terjadi error saat memasukkan data ke Database: " + ex.Message, "Error Simpan", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnUpload_Click(object sender, EventArgs e)
+        {
+            // Tempat jika kamu butuh upload foto/dokumen tambahan
+            MessageBox.Show("Fungsi Upload siap untuk dikembangkan!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        #endregion
+    }
+}
