@@ -39,5 +39,26 @@ namespace CRUDMahasiswaADO
             LoadData();
         }
 
+        #region --- Fungsi Inti Database & UI ---
+
+        private void ConnectDatabase()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    MessageBox.Show("Koneksi berhasil", "Informasi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Koneksi gagal: " + ex.Message, "Error Koneksi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SimpanLog("KONEKSI GAGAL: " + ex.Message);
+            }
+        }
+
         
-     }
+        #endregion
+    }
+}
