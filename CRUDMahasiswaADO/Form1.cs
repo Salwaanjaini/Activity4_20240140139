@@ -168,5 +168,52 @@ namespace CRUDMahasiswaADO
             txtKodeProdi.Text = row.Cells["KodeProdi"].Value?.ToString();
         }
 
-      
-}
+        private void dataGridView1_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            e.ThrowException = false;
+        }
+
+        private void btnConnect_Click(object sender, EventArgs e) { ConnectDatabase(); }
+
+        private void btnLoad_Click(object sender, EventArgs e) { LoadData(); }
+
+        private void btnInsert_Click(object sender, EventArgs e)
+        {
+            if (!ValidasiInput()) return;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                SqlTransaction trans = conn.BeginTransaction();
+                try
+                {
+                    SqlCommand cmd = new SqlCommand("sp_InsertMahasiswa", conn, trans);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@NIM", txtNIM.Text);
+                    cmd.Parameters.AddWithValue("@Nama", txtNama.Text);
+                    cmd.Parameters.AddWithValue("@JenisKelamin", cmbJK.Text);
+                    cmd.Parameters.AddWithValue("@TanggalLahir", dtpTanggalLahir.Value.Date);
+                    cmd.Parameters.AddWithValue("@Alamat", txtAlamat.Text);
+                    cmd.Parameters.AddWithValue("@KodeProdi", txtKodeProdi.Text);
+                    cmd.Parameters.AddWithValue("@TanggalDaftar", DateTime.Now);
+                    cmd.ExecuteNonQuery();
+
+                    SqlCommand cmdLog = new SqlCommand(@"INSERT INTO LogAktivitasSalah (aktivitas,waktu) VALUES (@aktivitas,GETDATE())", conn, trans);
+                    cmdLog.Parameters.AddWithValue("@aktivitas", "INSERT MAHASISWA : " + txtNIM.Text);
+                    cmdLog.ExecuteNonQuery();
+
+                    trans.Commit();
+                    MessageBox.Show("Data berhasil ditambahkan", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    ClearForm();
+                    LoadData();
+                }
+                catch (Exception ex)
+                {
+                    trans.Rollback();
+                    SimpanLog("INSERT ERROR : " + ex.Message);
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+       
